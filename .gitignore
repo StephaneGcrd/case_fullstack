@@ -13,7 +13,10 @@ __pycache__/
 .env
 .venv/
 
-output
+output/
 
 node_modules/
-.tanstack/
+web/node_modules/
+web/dist/
+web/build/
+web/.env
