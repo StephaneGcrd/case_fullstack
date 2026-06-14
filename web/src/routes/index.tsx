@@ -1,6 +1,8 @@
 // src/routes/index.tsx
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { ChatInput } from "../components/ChatInput";
+import { ChatTranscript } from "../components/ChatTranscript";
 import { createSession, streamChat } from "../lib/api";
 
 export const Route = createFileRoute("/")({
@@ -64,27 +66,18 @@ function ApiClientPage() {
   }
 
   return (
-    <div>
+    <div className="h-full">
       <h1>API Client</h1>
       <p>session_id: {sessionId ?? "(creating…)"}</p>
 
-      <textarea
-        rows={3}
-        cols={60}
-        value={message}
-        onChange={(e) => setMessage(e.target.value)}
-        placeholder="Type your message…"
+      <ChatInput
+        message={message}
+        onMessageChange={setMessage}
+        onSend={handleSend}
+        disabled={!sessionId || isStreaming}
       />
 
-      <button
-        type="button"
-        onClick={() => void handleSend()}
-        disabled={!sessionId || isStreaming}
-      >
-        Send
-      </button>
-
-      <pre>{output}</pre>
+      <ChatTranscript output={output} />
     </div>
   );
 }
