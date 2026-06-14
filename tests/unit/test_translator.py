@@ -19,11 +19,43 @@ def test_text_delta_emits_text_sse_event():
     assert events == [(SSEEventType.TEXT_DELTA, {"delta": "Hello"})]
 
 
-def test_text_part_delta_from_event_stream_is_ignored():
+def test_text_part_delta_from_event_stream_is_surfaced():
+    """Text from tool-calling turns (where <thinking> lives) must reach the client."""
     translator = StreamTranslator(session_id="s1", artifact_store=InMemoryArtifactStore())
     events = translator.translate(
         PartDeltaEvent(index=0, delta=TextPartDelta(content_delta="Hello"))
     )
+    assert events == [(SSEEventType.TEXT_DELTA, {"delta": "Hello"})]
+
+
+def test_thinking_in_event_stream_text_emits_thinking_events():
+    """A <thinking> block arriving via the event handler streams as thinking."""
+    translator = StreamTranslator(session_id="s1", artifact_store=InMemoryArtifactStore())
+    events = translator.translate(
+        PartDeltaEvent(
+            index=0, delta=TextPartDelta(content_delta="<thinking>plan SQL</thinking>")
+        )
+    )
+    types = [e[0] for e in events]
+    assert SSEEventType.THINKING_START in types
+    assert (SSEEventType.THINKING_DELTA, {"delta": "plan SQL"}) in events
+    assert SSEEventType.THINKING_END in types
+
+
+def test_part_start_text_is_surfaced():
+    """Some providers carry initial text on PartStartEvent; it must not be dropped."""
+    from pydantic_ai.messages import PartStartEvent, TextPart
+
+    translator = StreamTranslator(session_id="s1", artifact_store=InMemoryArtifactStore())
+    events = translator.translate(PartStartEvent(index=0, part=TextPart(content="hi")))
+    assert events == [(SSEEventType.TEXT_DELTA, {"delta": "hi"})]
+
+
+def test_empty_part_start_text_emits_nothing():
+    from pydantic_ai.messages import PartStartEvent, TextPart
+
+    translator = StreamTranslator(session_id="s1", artifact_store=InMemoryArtifactStore())
+    events = translator.translate(PartStartEvent(index=0, part=TextPart(content="")))
     assert events == []
 
 

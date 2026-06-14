@@ -9,6 +9,8 @@ from pydantic_ai.messages import (
     FunctionToolCallEvent,
     FunctionToolResultEvent,
     PartDeltaEvent,
+    PartStartEvent,
+    TextPart,
     TextPartDelta,
     ToolCallPartDelta,
 )
@@ -36,12 +38,22 @@ class StreamTranslator:
         tool_name: str | None = None,
         tool_args: dict[str, Any] | None = None,
     ) -> list[SSEEvent]:
+        if isinstance(event, PartStartEvent):
+            return self._translate_part_start(event)
         if isinstance(event, PartDeltaEvent):
             return self._translate_part_delta(event)
         if isinstance(event, FunctionToolCallEvent):
             return self._translate_tool_call(event)
         if isinstance(event, FunctionToolResultEvent):
             return self._translate_tool_result(event, tool_name, tool_args)
+        return []
+
+    def _translate_part_start(self, event: PartStartEvent) -> list[SSEEvent]:
+        # Tool-calling turns emit their text (incl. <thinking>) via the event
+        # handler. Anthropic starts text parts empty, but feed any initial
+        # content through the parser so no reasoning is lost on other providers.
+        if isinstance(event.part, TextPart) and event.part.content:
+            return self._thinking_parser.feed(event.part.content)
         return []
 
     def feed_text(self, chunk: str) -> list[SSEEvent]:
@@ -53,10 +65,12 @@ class StreamTranslator:
         return self._thinking_parser.flush()
 
     def _translate_part_delta(self, event: PartDeltaEvent) -> list[SSEEvent]:
-        # Text deltas are read from run.stream_text(); event_stream only carries
-        # tool-call deltas on follow-up turns when the model replies without tools.
+        # Text from tool-calling turns (the agent's <thinking> blocks) arrives
+        # here; the final answer's text comes via run.stream_text(). Feed both
+        # through the same parser. The handler breaks at FinalResultEvent before
+        # the final answer's deltas, so there is no duplication.
         if isinstance(event.delta, TextPartDelta):
-            return []
+            return self._thinking_parser.feed(event.delta.content_delta)
         if isinstance(event.delta, ToolCallPartDelta):
             return [
                 (
