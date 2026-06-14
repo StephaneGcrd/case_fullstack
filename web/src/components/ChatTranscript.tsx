@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef } from "react";
 import { API_BASE } from "../lib/api";
-import { TranscriptEntry } from "../types/transcript";
+import { RunSegment, TranscriptEntry } from "../types/transcript";
 
 type ChatTranscriptProps = {
   entries: TranscriptEntry[];
@@ -10,6 +10,67 @@ function ErrorBlock({ message }: { message: string }) {
   return <div>Error: {message}</div>;
 }
 
+function RunSegmentView({
+  segment,
+  index,
+  segments,
+  isStreaming,
+}: {
+  segment: RunSegment;
+  index: number;
+  segments: RunSegment[];
+  isStreaming: boolean;
+}) {
+  switch (segment.kind) {
+    case "status": {
+      let lastStatusIndex = -1;
+      for (let i = segments.length - 1; i >= 0; i--) {
+        if (segments[i].kind === "status") {
+          lastStatusIndex = i;
+          break;
+        }
+      }
+      const isLastStatus = isStreaming && lastStatusIndex === index;
+      return (
+        <div
+          className={`my-1 text-sm text-gray-500 ${isLastStatus ? "font-medium" : ""}`}
+        >
+          • {segment.text}
+        </div>
+      );
+    }
+    case "thinking":
+      return (
+        <details open>
+          <summary>thinking</summary>
+          <pre>{segment.text}</pre>
+        </details>
+      );
+    case "tool":
+      return (
+        <div>
+          <div>tool: {segment.name}</div>
+          <pre>{JSON.stringify(segment.args, null, 2)}</pre>
+          {segment.result && <pre>{segment.result}</pre>}
+        </div>
+      );
+    case "visualization":
+      return (
+        <div>
+          <a
+            href={`${API_BASE}${segment.url}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {segment.title}
+          </a>
+        </div>
+      );
+    case "text":
+      return <pre>{segment.text}</pre>;
+  }
+}
+
 function ChatRun({
   entry,
 }: {
@@ -17,49 +78,22 @@ function ChatRun({
 }) {
   return (
     <div>
-      {entry.statuses.length > 0 && (
-        <div className="my-1 text-sm text-gray-500">
-          {entry.statuses.map((s, i) => (
-            <div
-              key={`${i}-${s}`}
-              className={
-                i === entry.statuses.length - 1 && entry.status === "streaming"
-                  ? "font-medium"
-                  : ""
-              }
-            >
-              • {s}
-            </div>
-          ))}
-        </div>
-      )}
       {entry.runId && <div>run_id: {entry.runId}</div>}
-      {entry.thinking.length > 0 && (
-        <details open>
-          <summary>thinking</summary>
-          <pre>{entry.thinking}</pre>
-        </details>
-      )}
-      {entry.toolCalls.map((tc) => (
-        <div key={tc.id}>
-          <div>tool: {tc.name}</div>
-          <pre>{JSON.stringify(tc.args, null, 2)}</pre>
-          {tc.result && <pre>{tc.result}</pre>}
-        </div>
+      {entry.segments.map((segment, index) => (
+        <RunSegmentView
+          key={
+            segment.kind === "tool"
+              ? segment.id
+              : segment.kind === "visualization"
+                ? segment.artifactId
+                : `${segment.kind}-${index}`
+          }
+          segment={segment}
+          index={index}
+          segments={entry.segments}
+          isStreaming={entry.status === "streaming"}
+        />
       ))}
-      {entry.visualizations.map((v) => (
-        <div key={v.artifactId}>
-          <a
-            href={`${API_BASE}${v.url}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {v.title}
-          </a>
-        </div>
-      ))}
-
-      {entry.text.length > 0 && <pre>{entry.text}</pre>}
       <div>status: {entry.status}</div>
     </div>
   );

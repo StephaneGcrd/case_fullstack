@@ -1,5 +1,20 @@
 import type { CreateSessionResponse } from "../lib/api";
 
+/** One chronological block inside a chat run, in SSE arrival order. */
+export type RunSegment =
+  | { kind: "status"; text: string }
+  | { kind: "thinking"; text: string }
+  | { kind: "text"; text: string }
+  | {
+      kind: "tool";
+      id: string;
+      name: string;
+      args: Record<string, unknown>;
+      argsJson?: string;
+      result?: string;
+    }
+  | { kind: "visualization"; artifactId: string; title: string; url: string };
+
 /** One item in the scrollable transcript. */
 export type TranscriptEntry =
   | { id: string; transcriptType: "session_request" }
@@ -12,26 +27,8 @@ export type TranscriptEntry =
   | {
       id: string;
       transcriptType: "chat_run";
-      toolCalls: ToolCall[];
-      visualizations: Visualization[];
       runId?: string;
-      thinking: string;
-      text: string;
-      statuses: string[];
+      segments: RunSegment[];
       status: "streaming" | "done" | "error";
     }
   | { id: string; transcriptType: "error"; message: string };
-
-export type ToolCall = {
-  id: string;
-  name: string;
-  args: Record<string, unknown>;
-  argsJson?: string;
-  result?: string;
-};
-
-export type Visualization = {
-  artifactId: string;
-  title: string;
-  url: string;
-};

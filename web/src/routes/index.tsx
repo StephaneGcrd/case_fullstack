@@ -69,11 +69,7 @@ function ApiClientPage() {
       {
         id: runEntryId,
         transcriptType: "chat_run",
-        thinking: "",
-        text: "",
-        statuses: [],
-        toolCalls: [],
-        visualizations: [],
+        segments: [],
         status: "streaming",
       },
     ]);

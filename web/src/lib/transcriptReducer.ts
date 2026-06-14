@@ -1,4 +1,4 @@
-import type { TranscriptEntry } from "../types/transcript";
+import type { RunSegment, TranscriptEntry } from "../types/transcript";
 import type { SseEvent } from "./sse";
 
 /** Find the last chat_run entry (the one currently streaming). */
@@ -10,6 +10,28 @@ export function findActiveRun(entries: TranscriptEntry[]) {
   return null;
 }
 
+function appendTextSegment(
+  segments: RunSegment[],
+  kind: "thinking" | "text",
+  delta: string,
+): RunSegment[] {
+  const last = segments.at(-1);
+  if (last?.kind === kind) {
+    return [...segments.slice(0, -1), { kind, text: last.text + delta }];
+  }
+  return [...segments, { kind, text: delta }];
+}
+
+function updateToolSegment(
+  segments: RunSegment[],
+  id: string,
+  update: (segment: Extract<RunSegment, { kind: "tool" }>) => RunSegment,
+): RunSegment[] {
+  return segments.map((segment) =>
+    segment.kind === "tool" && segment.id === id ? update(segment) : segment,
+  );
+}
+
 export function applySseEvent(
   entries: TranscriptEntry[],
   event: SseEvent,
@@ -18,21 +40,31 @@ export function applySseEvent(
   if (!active || active.entry.transcriptType !== "chat_run") return entries;
 
   const { index, entry } = active;
-  const run = { ...entry };
+  const run = { ...entry, segments: [...entry.segments] };
 
   switch (event.type) {
     case "run_start":
       run.runId = event.data.run_id as string;
       break;
     case "thinking_delta":
-      run.thinking += (event.data.delta as string) ?? "";
+      run.segments = appendTextSegment(
+        run.segments,
+        "thinking",
+        (event.data.delta as string) ?? "",
+      );
       break;
     case "text_delta":
-      run.text += (event.data.delta as string) ?? "";
+      run.segments = appendTextSegment(
+        run.segments,
+        "text",
+        (event.data.delta as string) ?? "",
+      );
       break;
     case "status": {
       const statusText = event.data.text as string | undefined;
-      if (statusText) run.statuses = [...run.statuses, statusText];
+      if (statusText) {
+        run.segments = [...run.segments, { kind: "status", text: statusText }];
+      }
       break;
     }
     case "done":
@@ -43,9 +75,10 @@ export function applySseEvent(
       break;
 
     case "tool_call_start":
-      run.toolCalls = [
-        ...run.toolCalls,
+      run.segments = [
+        ...run.segments,
         {
+          kind: "tool",
           id: event.data.tool_call_id as string,
           name: event.data.tool_name as string,
           args: (event.data.args as Record<string, unknown>) ?? {},
@@ -54,28 +87,27 @@ export function applySseEvent(
       break;
     case "tool_call_delta": {
       const id = event.data.tool_call_id as string;
-      run.toolCalls = run.toolCalls.map((tc) =>
-        tc.id === id
-          ? {
-              ...tc,
-              argsJson: (tc.argsJson ?? "") + (event.data.args_delta as string),
-            }
-          : tc,
-      );
+      run.segments = updateToolSegment(run.segments, id, (segment) => ({
+        ...segment,
+        argsJson:
+          (segment.argsJson ?? "") + (event.data.args_delta as string),
+      }));
       break;
     }
     case "tool_result": {
       const id = event.data.tool_call_id as string;
       const content = event.data.content as string;
-      run.toolCalls = run.toolCalls.map((tc) =>
-        tc.id === id ? { ...tc, result: content } : tc,
-      );
+      run.segments = updateToolSegment(run.segments, id, (segment) => ({
+        ...segment,
+        result: content,
+      }));
       break;
     }
     case "visualization":
-      run.visualizations = [
-        ...run.visualizations,
+      run.segments = [
+        ...run.segments,
         {
+          kind: "visualization",
           artifactId: event.data.artifact_id as string,
           title: event.data.title as string,
           url: event.data.url as string,
@@ -84,7 +116,6 @@ export function applySseEvent(
       break;
 
     default:
-      // Unknown event types: ignore.
       return entries;
   }
 
