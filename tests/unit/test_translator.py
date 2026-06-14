@@ -94,14 +94,26 @@ def test_visualize_tool_call_status():
     translator = StreamTranslator(session_id="s1", artifact_store=InMemoryArtifactStore())
     part = ToolCallPart(tool_name="visualize", args={"title": "Chart"}, tool_call_id="tc1")
     events = translator.translate(FunctionToolCallEvent(part=part))
-    assert events[0] == (SSEEventType.STATUS, {"text": "Creating the visualization…"})
+    assert events == [
+        (SSEEventType.STATUS, {"text": "Creating the visualization…"}),
+        (
+            SSEEventType.TOOL_CALL_START,
+            {"tool_call_id": "tc1", "tool_name": "visualize", "args": {"title": "Chart"}},
+        ),
+    ]
 
 
 def test_unknown_tool_call_status_fallback():
     translator = StreamTranslator(session_id="s1", artifact_store=InMemoryArtifactStore())
     part = ToolCallPart(tool_name="frobnicate", args={}, tool_call_id="tc1")
     events = translator.translate(FunctionToolCallEvent(part=part))
-    assert events[0] == (SSEEventType.STATUS, {"text": "Running frobnicate…"})
+    assert events == [
+        (SSEEventType.STATUS, {"text": "Running frobnicate…"}),
+        (
+            SSEEventType.TOOL_CALL_START,
+            {"tool_call_id": "tc1", "tool_name": "frobnicate", "args": {}},
+        ),
+    ]
 
 
 def test_tool_call_delta_event():

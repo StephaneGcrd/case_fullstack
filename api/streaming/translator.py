@@ -26,6 +26,7 @@ class StreamTranslator:
     """Maps one PydanticAI event to zero or more SSE events."""
 
     # Friendly status sentences shown in the UI while a tool runs.
+    # Keys must match the agent's tool function names (agent/tools/*).
     _TOOL_STATUS = {
         "query_data": "Querying the dataset…",
         "visualize": "Creating the visualization…",
