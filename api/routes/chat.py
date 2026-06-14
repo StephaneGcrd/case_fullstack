@@ -12,10 +12,33 @@ from api.services.chat_service import ChatService
 from api.services.session_store import SessionStore
 from pydantic_ai import Agent
 
-router = APIRouter(tags=["chat"])
+router = APIRouter(tags=["Chat"])
 
 
-@router.post("/sessions/{session_id}/chat")
+@router.post(
+    "/sessions/{session_id}/chat",
+    summary="Stream an agent response",
+    description=(
+        "Send a user prompt to an existing session and receive transcript updates "
+        "as server-sent events. The stream can include run status, thinking text, "
+        "tool activity, final answer text, and generated artifact references."
+    ),
+    responses={
+        200: {
+            "description": "Server-sent event stream of transcript updates.",
+            "content": {
+                "text/event-stream": {
+                    "schema": {
+                        "type": "string",
+                        "description": "SSE frames containing typed transcript events.",
+                    }
+                }
+            },
+        },
+        404: {"description": "Session not found."},
+        409: {"description": "A response stream is already active for this session."},
+    },
+)
 async def chat(
     session_id: str,
     body: ChatRequest,

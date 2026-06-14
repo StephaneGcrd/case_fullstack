@@ -4,7 +4,7 @@ from api.dependencies import get_artifact_store
 from api.exceptions import ArtifactAccessDeniedError, ArtifactGoneError, ArtifactNotFoundError
 from api.services.artifact_store import ArtifactStore
 
-router = APIRouter(prefix="/artifacts", tags=["artifacts"])
+router = APIRouter(prefix="/artifacts", tags=["Artifacts"])
 
 _CONTENT_TYPES = {"figure": "text/html", "table": "text/csv"}
 
@@ -48,7 +48,36 @@ def _inject_figure_resize_script(content: bytes) -> bytes:
     return content + _RESIZE_SCRIPT_BYTES
 
 
-@router.get("/{artifact_id}")
+@router.get(
+    "/{artifact_id}",
+    summary="Fetch a generated artifact",
+    description=(
+        "Return the content for a generated analysis artifact. Figure artifacts are "
+        "served as HTML, and table artifacts are served as CSV."
+    ),
+    responses={
+        200: {
+            "description": "Generated artifact content, either CSV data or an HTML figure.",
+            "content": {
+                "text/html": {
+                    "schema": {
+                        "type": "string",
+                        "description": "Standalone HTML figure content.",
+                    }
+                },
+                "text/csv": {
+                    "schema": {
+                        "type": "string",
+                        "description": "CSV table content.",
+                    }
+                },
+            },
+        },
+        403: {"description": "Artifact access denied."},
+        404: {"description": "Artifact not found."},
+        410: {"description": "Artifact file no longer available."},
+    },
+)
 async def get_artifact(
     artifact_id: str,
     store: ArtifactStore = Depends(get_artifact_store),

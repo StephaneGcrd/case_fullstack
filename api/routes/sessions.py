@@ -7,10 +7,19 @@ from api.schemas import CreateSessionResponse, DatasetInfo, SessionDetailRespons
 from api.services.dataset_loader import load_datasets
 from api.services.session_store import SessionStore
 
-router = APIRouter(prefix="/sessions", tags=["sessions"])
+router = APIRouter(prefix="/sessions", tags=["Sessions"])
 
 
-@router.post("", response_model=CreateSessionResponse)
+@router.post(
+    "",
+    response_model=CreateSessionResponse,
+    summary="Create a chat session",
+    description=(
+        "Load the available CSV datasets from the data directory and create an "
+        "in-memory chat session that can be used for follow-up analysis prompts."
+    ),
+    response_description="Session created with loaded dataset metadata.",
+)
 async def create_session(store: SessionStore = Depends(get_session_store)):
     """Create a new chat session with datasets loaded from data/."""
     datasets, dataset_info = await asyncio.to_thread(load_datasets)
@@ -24,7 +33,17 @@ async def create_session(store: SessionStore = Depends(get_session_store)):
     )
 
 
-@router.get("/{session_id}", response_model=SessionDetailResponse)
+@router.get(
+    "/{session_id}",
+    response_model=SessionDetailResponse,
+    summary="Get session details",
+    description=(
+        "Return dataset metadata, stored conversation count, and streaming state "
+        "for an existing chat session."
+    ),
+    response_description="Session metadata.",
+    responses={404: {"description": "Session not found."}},
+)
 async def get_session(session_id: str, store: SessionStore = Depends(get_session_store)):
     """Return session metadata for debugging and UI state."""
     session = await store.get(session_id)
@@ -41,7 +60,16 @@ async def get_session(session_id: str, store: SessionStore = Depends(get_session
     )
 
 
-@router.delete("/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{session_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete a chat session",
+    description="Delete an in-memory chat session and release its loaded datasets.",
+    responses={
+        204: {"description": "Session deleted."},
+        404: {"description": "Session not found."},
+    },
+)
 async def delete_session(session_id: str, store: SessionStore = Depends(get_session_store)):
     """Delete a session and free in-memory state."""
     if not await store.delete(session_id):
