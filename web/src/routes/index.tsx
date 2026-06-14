@@ -4,6 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { ChatInput } from "../components/ChatInput";
 import { ChatTranscript } from "../components/ChatTranscript";
 import { createSession, streamChat } from "../lib/api";
+import { parseSseChunk } from "../lib/sse";
+import { applySseEvent, findActiveRun } from "../lib/transcriptReducer";
+import { TranscriptEntry } from "../types/transcript";
 
 export const Route = createFileRoute("/")({
   component: ApiClientPage,
@@ -12,16 +15,12 @@ export const Route = createFileRoute("/")({
 function ApiClientPage() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
-  const [output, setOutput] = useState("");
+
+  const [entries, setEntries] = useState<TranscriptEntry[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
 
   // React Strict Mode runs effects twice in dev — guard so we only POST /sessions once
   const sessionInitStarted = useRef(false);
-
-  /** Append text to the curl-style transcript in <pre>. */
-  function append(text: string) {
-    setOutput((prev) => prev + text);
-  }
 
   // On load: create session and print raw JSON (like curl POST /sessions)
   useEffect(() => {
@@ -29,14 +28,24 @@ function ApiClientPage() {
     sessionInitStarted.current = true;
 
     async function initSession() {
-      append(">>> POST /sessions\n");
+      setEntries((prev) => [
+        ...prev,
+        { id: crypto.randomUUID(), transcriptType: "session_request" },
+      ]);
+
       try {
         const data = await createSession();
         setSessionId(data.session_id);
-        append(`${JSON.stringify(data, null, 2)}\n\n`);
+        setEntries((prev) => [
+          ...prev,
+          { id: crypto.randomUUID(), transcriptType: "session_response", data },
+        ]);
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        append(`Error: ${msg}\n\n`);
+        setEntries((prev) => [
+          ...prev,
+          { id: crypto.randomUUID(), transcriptType: "error", message: msg },
+        ]);
       }
     }
 
@@ -45,30 +54,56 @@ function ApiClientPage() {
 
   async function handleSend() {
     const trimmed = message.trim();
+
     if (!sessionId || !trimmed || isStreaming) return;
 
-    // Log the request (curl-style) before streaming the response
-    append(`>>> POST /sessions/${sessionId}/chat\n`);
-    append(`${JSON.stringify({ message: trimmed })}\n`);
+    const runEntryId = crypto.randomUUID();
+
+    setEntries((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        transcriptType: "chat_request",
+        message: trimmed,
+      },
+      {
+        id: runEntryId,
+        transcriptType: "chat_run",
+        thinking: "",
+        text: "",
+        toolCalls: [],
+        visualizations: [],
+        status: "streaming",
+      },
+    ]);
 
     setIsStreaming(true);
+    let sseBuffer = "";
+
     try {
       await streamChat(sessionId, trimmed, (chunk) => {
-        append(chunk);
+        const parsed = parseSseChunk(sseBuffer, chunk);
+
+        sseBuffer = parsed.buffer;
+        setEntries((prev) => parsed.events.reduce(applySseEvent, prev));
       });
-      append("\n\n");
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      append(`Error: ${msg}\n\n`);
+      setEntries((prev) => [
+        ...prev,
+        { id: crypto.randomUUID(), transcriptType: "error", message: msg },
+      ]);
     } finally {
       setIsStreaming(false);
     }
   }
 
   return (
-    <div className="h-full">
-      <h1>API Client</h1>
-      <p>session_id: {sessionId ?? "(creating…)"}</p>
+    <div className="flex h-full min-h-screen flex-col">
+      <div className="shrink-0">
+        <h1>API Client</h1>
+        <p>session_id: {sessionId ?? "(creating…)"}</p>
+      </div>
 
       <ChatInput
         message={message}
@@ -77,7 +112,7 @@ function ApiClientPage() {
         disabled={!sessionId || isStreaming}
       />
 
-      <ChatTranscript output={output} />
+      <ChatTranscript entries={entries} />
     </div>
   );
 }
