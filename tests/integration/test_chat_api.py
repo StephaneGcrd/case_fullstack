@@ -1,7 +1,7 @@
 import pytest
 
 from api.dependencies import get_agent_factory
-from tests.helpers.fake_agent import make_fake_run_stream
+from tests.helpers.fake_agent import make_fake_agent
 from tests.helpers.sse_parser import parse_sse
 
 
@@ -9,9 +9,9 @@ def test_chat_stream_returns_sse_events(client, monkeypatch):
     created = client.post("/sessions").json()
     session_id = created["session_id"]
 
-    fake_agent = make_fake_run_stream(
+    fake_agent = make_fake_agent(
         [],
-        stream_text_chunks=["<thinking>plan</thinking>", "Answer."],
+        final_text_chunks=["<thinking>plan</thinking>", "Answer."],
     )
 
     app = client.app

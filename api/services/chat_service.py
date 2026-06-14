@@ -1,4 +1,4 @@
-"""Orchestrate agent.run_stream and yield encoded SSE events."""
+"""Orchestrate agent.run with an event stream handler and yield SSE events."""
 
 from __future__ import annotations
 
@@ -52,18 +52,18 @@ class ChatService:
 
         async def _run() -> None:
             try:
-                async with agent.run_stream(
+                # agent.run (not run_stream) streams every turn's full text through
+                # the handler exactly once, so thinking and the final answer are
+                # never double-fed to the parser (run_stream + stream_text was).
+                result = await agent.run(
                     message,
                     deps=session.context,
                     message_history=session.message_history or None,
                     event_stream_handler=event_stream_handler,
-                ) as run:
-                    async for chunk in run.stream_text(delta=True):
-                        for sse_event in translator.feed_text(chunk):
-                            await queue.put(sse_event)
-                    for sse_event in translator.flush_text():
-                        await queue.put(sse_event)
-                    session.message_history = run.all_messages()
+                )
+                for sse_event in translator.flush_text():
+                    await queue.put(sse_event)
+                session.message_history = result.all_messages()
             except Exception as exc:
                 await queue.put((SSEEventType.ERROR, {"message": str(exc)}))
 

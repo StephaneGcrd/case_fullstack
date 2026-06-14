@@ -68,14 +68,13 @@ class StreamTranslator:
         return self._thinking_parser.feed(chunk)
 
     def flush_text(self) -> list[SSEEvent]:
-        """Flush thinking parser buffer after stream_text completes."""
+        """Flush any buffered text from the parser at end of run."""
         return self._thinking_parser.flush()
 
     def _translate_part_delta(self, event: PartDeltaEvent) -> list[SSEEvent]:
-        # Intermediate-turn text deltas (which may include <thinking> blocks) arrive
-        # here; the final answer's text comes via run.stream_text(). Feed both
-        # through the same parser. The handler breaks at FinalResultEvent before
-        # the final answer's deltas, so there is no duplication.
+        # Every turn's text — the agent's <thinking> blocks and the final answer —
+        # arrives here via the event handler. Feed it all through the same parser.
+        # There is a single text source (agent.run), so nothing is double-fed.
         if isinstance(event.delta, TextPartDelta):
             return self._thinking_parser.feed(event.delta.content_delta)
         if isinstance(event.delta, ToolCallPartDelta):

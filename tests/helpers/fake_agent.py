@@ -2,52 +2,44 @@
 
 from __future__ import annotations
 
-import asyncio
 from collections.abc import AsyncIterator, Callable
-from contextlib import asynccontextmanager
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
+
+from pydantic_ai.messages import PartDeltaEvent, TextPartDelta
 
 
-async def _async_iter(items: list[Any]) -> AsyncIterator[Any]:
-    for item in items:
-        yield item
-
-
-def make_fake_run_stream(
+def make_fake_agent(
     events: list[Any],
-    final_output: str = "Done.",
-    stream_text_chunks: list[str] | None = None,
+    final_text_chunks: list[str] | None = None,
 ):
-    """Return a mock agent whose run_stream yields predefined events."""
+    """Return a mock agent whose run() streams events through the handler.
 
-    @asynccontextmanager
-    async def run_stream(*args, **kwargs):
+    `events` are emitted first (e.g. thinking deltas, tool calls/results), then
+    each string in `final_text_chunks` is emitted as a TextPartDelta — modeling
+    how agent.run delivers the full final answer through the handler exactly once.
+    """
+    text_chunks = final_text_chunks if final_text_chunks is not None else ["Done."]
+    text_events = [
+        PartDeltaEvent(index=0, delta=TextPartDelta(content_delta=c)) for c in text_chunks
+    ]
+    all_events = list(events) + text_events
+
+    async def run(*args, **kwargs):
         handler: Callable | None = kwargs.get("event_stream_handler")
-
-        async def _emit() -> None:
-            if handler is None:
-                return
+        if handler is not None:
             ctx = MagicMock()
 
-            async def event_gen():
-                for event in events:
+            async def event_gen() -> AsyncIterator[Any]:
+                for event in all_events:
                     yield event
 
             await handler(ctx, event_gen())
 
-        text_chunks = stream_text_chunks if stream_text_chunks is not None else [final_output]
-        run = MagicMock()
-        run.stream_text = lambda delta=False: _async_iter(text_chunks)
-        run.all_messages = MagicMock(return_value=[])
-
-        emit_task = asyncio.create_task(_emit())
-        try:
-            yield run
-        finally:
-            await emit_task
+        result = MagicMock()
+        result.all_messages = MagicMock(return_value=[])
+        return result
 
     agent = MagicMock()
-    agent.run_stream = run_stream
-    agent.run = AsyncMock()
+    agent.run = run
     return agent
