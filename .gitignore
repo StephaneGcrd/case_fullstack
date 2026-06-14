@@ -13,4 +13,7 @@ __pycache__/
 .env
 .venv/
 
-output/
+output
+
+node_modules/
+.tanstack/
