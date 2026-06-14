@@ -1,4 +1,8 @@
-import type { RunSegment, ToolSegment, TranscriptEntry } from "../types/transcript";
+import type {
+  RunSegment,
+  ToolSegment,
+  TranscriptEntry,
+} from "../types/transcript";
 import type { SseEvent } from "./sse";
 
 /** Find the last chat_run entry (the one currently streaming). */
@@ -45,9 +49,8 @@ export function applySseEvent(
   entries: TranscriptEntry[],
   event: SseEvent,
 ): TranscriptEntry[] {
-  console.log(entries);
   const active = findActiveRun(entries);
-  console.log(active);
+
   if (!active || active.entry.transcriptType !== "chat_run") return entries;
 
   const { index, entry } = active;
@@ -103,6 +106,7 @@ export function applySseEvent(
       break;
     case "tool_call_delta": {
       const id = event.data.tool_call_id as string;
+      // Update the tool segment with the args delta
       run.segments = updateToolSegment(run.segments, id, (segment) => ({
         ...segment,
         argsJson: (segment.argsJson ?? "") + (event.data.args_delta as string),
@@ -112,6 +116,7 @@ export function applySseEvent(
     case "tool_result": {
       const id = event.data.tool_call_id as string;
       const content = event.data.content as string;
+      // Update the tool segment with the result
       run.segments = updateToolSegment(run.segments, id, (segment) => ({
         ...segment,
         result: content,

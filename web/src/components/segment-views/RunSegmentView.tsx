@@ -1,3 +1,7 @@
+/**
+ * Dispatches a single RunSegment to the view matching its kind.
+ * Used by ChatRun to render each SSE block in arrival order.
+ */
 import { RunSegment } from "../../types/transcript";
 import { StatusSegmentView } from "./StatusSegmentView";
 import { TextSegmentView } from "./TextSegmentView";
@@ -12,6 +16,7 @@ type RunSegmentViewProps = {
   isStreaming: boolean;
 };
 
+/** Route one transcript segment to its kind-specific renderer. */
 export function RunSegmentView({
   segment,
   index,

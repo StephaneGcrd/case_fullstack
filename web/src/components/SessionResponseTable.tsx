@@ -1,3 +1,7 @@
+/**
+ * Renders the dataset catalog returned when a session is created.
+ * Shown in the chat transcript as the `session_response` entry (see ChatTranscript).
+ */
 import { RiTableLine } from "@remixicon/react";
 import type { CreateSessionResponse } from "../lib/api";
 
@@ -7,6 +11,7 @@ type SessionResponseTableProps = {
 
 type Dataset = CreateSessionResponse["datasets"][number];
 
+/** Summary card for one loaded dataset: name, row count, and column names. */
 function DatasetCard({ dataset }: { dataset: Dataset }) {
   return (
     <article className="rounded-md border border-slate-200 bg-white px-2.5 py-2">
@@ -40,6 +45,7 @@ function DatasetCard({ dataset }: { dataset: Dataset }) {
   );
 }
 
+/** Grid of dataset cards from POST /sessions. */
 export function SessionResponseTable({ data }: SessionResponseTableProps) {
   return (
     <div className="session-response">

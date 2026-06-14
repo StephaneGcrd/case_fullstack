@@ -83,7 +83,7 @@ type MarkdownContentProps = {
 export function MarkdownContent({ children, className = "" }: MarkdownContentProps) {
   return (
     <div
-      className={`max-w-full overflow-hidden break-words text-sm [overflow-wrap:anywhere] ${className}`}
+      className={`max-w-full overflow-hidden break-words [overflow-wrap:anywhere] ${className}`}
     >
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
         {children}
