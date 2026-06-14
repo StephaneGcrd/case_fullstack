@@ -21,7 +21,7 @@ function ChatRun({
         <div className="my-1 text-sm text-gray-500">
           {entry.statuses.map((s, i) => (
             <div
-              key={i}
+              key={`${i}-${s}`}
               className={
                 i === entry.statuses.length - 1 && entry.status === "streaming"
                   ? "font-medium"

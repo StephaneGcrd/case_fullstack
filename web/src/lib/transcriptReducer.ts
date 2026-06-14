@@ -30,9 +30,11 @@ export function applySseEvent(
     case "text_delta":
       run.text += (event.data.delta as string) ?? "";
       break;
-    case "status":
-      run.statuses = [...run.statuses, (event.data.text as string) ?? ""];
+    case "status": {
+      const statusText = event.data.text as string | undefined;
+      if (statusText) run.statuses = [...run.statuses, statusText];
       break;
+    }
     case "done":
       run.status = "done";
       break;
@@ -82,7 +84,7 @@ export function applySseEvent(
       break;
 
     default:
-      // Unknown events: ignore for now (tool_call_start, visualization, …)
+      // Unknown event types: ignore.
       return entries;
   }
 
