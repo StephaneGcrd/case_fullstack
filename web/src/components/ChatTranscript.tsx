@@ -66,8 +66,6 @@ function ChatRun({
 }
 
 function TranscriptEntryView({ entry }: { entry: TranscriptEntry }) {
-  console.log("entry", entry);
-
   switch (entry.transcriptType) {
     case "session_request":
       return <div>{">>>"} POST /sessions</div>;
@@ -94,7 +92,6 @@ export function ChatTranscript({ entries }: ChatTranscriptProps) {
     bottomRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
   }, [entries]);
 
-  console.log("entries transcript", entries);
   return (
     <div className="min-h-0 flex-1 overflow-y-auto">
       {entries.map((entry) => (
