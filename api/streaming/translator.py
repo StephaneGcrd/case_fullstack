@@ -91,7 +91,7 @@ class StreamTranslator:
 
     def _translate_tool_call(self, event: FunctionToolCallEvent) -> list[SSEEvent]:
         part = event.part
-        args = part.args if isinstance(part.args, dict) else {}
+        args = part.args_as_dict()
         self._pending_tool_args[part.tool_call_id] = args
         status = self._TOOL_STATUS.get(part.tool_name, f"Running {part.tool_name}…")
         return [

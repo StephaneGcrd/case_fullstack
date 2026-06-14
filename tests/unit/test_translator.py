@@ -133,6 +133,44 @@ def test_tool_call_delta_event():
     ]
 
 
+def test_tool_call_args_parsed_from_json_string():
+    """Anthropic delivers args as a JSON string; it must be surfaced as a dict."""
+    translator = StreamTranslator(session_id="s1", artifact_store=InMemoryArtifactStore())
+    part = ToolCallPart(
+        tool_name="query_data",
+        args='{"sql": "SELECT 1", "description": "demo"}',
+        tool_call_id="tc1",
+    )
+    events = translator.translate(FunctionToolCallEvent(part=part))
+    assert events == [
+        (SSEEventType.STATUS, {"text": "Querying the dataset…"}),
+        (
+            SSEEventType.TOOL_CALL_START,
+            {
+                "tool_call_id": "tc1",
+                "tool_name": "query_data",
+                "args": {"sql": "SELECT 1", "description": "demo"},
+            },
+        ),
+    ]
+
+
+def test_visualize_args_from_json_string_set_title():
+    """A JSON-string args payload must still drive the visualization title."""
+    translator = StreamTranslator(session_id="s1", artifact_store=InMemoryArtifactStore())
+    call = ToolCallPart(
+        tool_name="visualize",
+        args='{"title": "My Chart", "result_type": "figure"}',
+        tool_call_id="tc9",
+    )
+    translator.translate(FunctionToolCallEvent(part=call))
+    # The stored args (used to enrich the visualize result) must be the parsed dict.
+    assert translator._pending_tool_args["tc9"] == {
+        "title": "My Chart",
+        "result_type": "figure",
+    }
+
+
 def test_visualize_tool_result_emits_visualization(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     output_dir = tmp_path / "output"
