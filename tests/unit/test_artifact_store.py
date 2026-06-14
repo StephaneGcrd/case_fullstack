@@ -68,6 +68,18 @@ def test_parse_visualize_tool_result(store, tmp_path: Path, monkeypatch):
     assert store.get(artifact_id).filepath.resolve() == filepath.resolve()
 
 
+def test_register_infers_table_type_from_csv_extension(store, tmp_path: Path):
+    filepath = tmp_path / "output" / "top_products.csv"
+    filepath.write_text("product,sales\nA,1\n")
+    artifact_id = store.register(
+        filepath=filepath,
+        title="Top Products",
+        artifact_type="figure",
+        session_id="sess-1",
+    )
+    assert store.get(artifact_id).type == "table"
+
+
 def test_register_rejects_path_outside_output_dir(store, tmp_path: Path):
     filepath = tmp_path / "outside.html"
     filepath.write_text("<html></html>")

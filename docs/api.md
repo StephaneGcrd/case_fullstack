@@ -37,11 +37,11 @@ sequenceDiagram
 
 ## Conventions
 
-| Item | Value |
-|------|--------|
-| JSON requests | `Content-Type: application/json` |
-| Chat stream | `Content-Type: text/event-stream` |
-| CORS (dev) | `Access-Control-Allow-Origin: *` |
+| Item            | Value                                  |
+| --------------- | -------------------------------------- |
+| JSON requests   | `Content-Type: application/json`       |
+| Chat stream     | `Content-Type: text/event-stream`      |
+| CORS (dev)      | `Access-Control-Allow-Origin: *`       |
 | Session storage | Server-side; client keeps `session_id` |
 
 ---
@@ -101,7 +101,11 @@ GET /sessions/{session_id}
 {
   "session_id": "550e8400-e29b-41d4-a716-446655440000",
   "datasets": [
-    { "name": "carpriceprediction", "rows": 205, "columns": ["car_ID", "price"] }
+    {
+      "name": "carpriceprediction",
+      "rows": 205,
+      "columns": ["car_ID", "price"]
+    }
   ],
   "message_count": 4,
   "is_streaming": false
@@ -141,19 +145,19 @@ Content-Type: application/json
 }
 ```
 
-| Field | Type | Rules |
-|-------|------|--------|
+| Field     | Type   | Rules                  |
+| --------- | ------ | ---------------------- |
 | `message` | string | Required, min length 1 |
 
 **Response:** `200` with `Content-Type: text/event-stream` (not JSON).
 
 **Errors before the stream starts** (JSON body, typical FastAPI shape):
 
-| Status | When |
-|--------|------|
-| 404 | Unknown session |
-| 409 | Another chat stream is already running on this session |
-| 422 | Empty or invalid `message` |
+| Status | When                                                   |
+| ------ | ------------------------------------------------------ |
+| 404    | Unknown session                                        |
+| 409    | Another chat stream is already running on this session |
+| 422    | Empty or invalid `message`                             |
 
 Only **one active chat stream per session** at a time. If you get 409, wait for the current stream to finish or show “Agent busy” and block send.
 
@@ -170,9 +174,9 @@ GET /artifacts/{artifact_id}
 **Response 200**
 
 | `type` (from SSE `visualization` event) | `Content-Type` |
-|----------------------------------------|----------------|
-| `figure` | `text/html` |
-| `table` | `text/csv` |
+| --------------------------------------- | -------------- |
+| `figure`                                | `text/html`    |
+| `table`                                 | `text/csv`     |
 
 **Response 404** — unknown artifact id.
 
@@ -230,30 +234,30 @@ data: {"session_id": "550e8400-e29b-41d4-a716-446655440000"}
 
 ## SSE event reference
 
-| `event` | When | `data` payload |
-|---------|------|----------------|
-| `run_start` | Agent run started | `{ "run_id": string }` |
-| `thinking_start` | Start of `<thinking>` block | `{}` |
-| `thinking_delta` | Token inside thinking | `{ "delta": string }` |
-| `thinking_end` | End of thinking block | `{}` |
-| `tool_call_start` | LLM invokes a tool | `{ "tool_call_id", "tool_name", "args" }` |
-| `tool_call_delta` | Tool args streamed incrementally | `{ "tool_call_id", "args_delta" }` |
-| `tool_result` | Tool finished | `{ "tool_call_id", "tool_name", "content" }` |
-| `visualization` | Chart or table created | `{ "artifact_id", "title", "type": "figure"\|"table", "url" }` |
-| `text_delta` | Final answer text (outside thinking) | `{ "delta": string }` |
-| `error` | Error during run | `{ "message": string }` |
-| `done` | Run finished, history saved | `{ "session_id": string }` |
+| `event`           | When                                 | `data` payload                                                 |
+| ----------------- | ------------------------------------ | -------------------------------------------------------------- |
+| `run_start`       | Agent run started                    | `{ "run_id": string }`                                         |
+| `thinking_start`  | Start of `<thinking>` block          | `{}`                                                           |
+| `thinking_delta`  | Token inside thinking                | `{ "delta": string }`                                          |
+| `thinking_end`    | End of thinking block                | `{}`                                                           |
+| `tool_call_start` | LLM invokes a tool                   | `{ "tool_call_id", "tool_name", "args" }`                      |
+| `tool_call_delta` | Tool args streamed incrementally     | `{ "tool_call_id", "args_delta" }`                             |
+| `tool_result`     | Tool finished                        | `{ "tool_call_id", "tool_name", "content" }`                   |
+| `visualization`   | Chart or table created               | `{ "artifact_id", "title", "type": "figure"\|"table", "url" }` |
+| `text_delta`      | Final answer text (outside thinking) | `{ "delta": string }`                                          |
+| `error`           | Error during run                     | `{ "message": string }`                                        |
+| `done`            | Run finished, history saved          | `{ "session_id": string }`                                     |
 
 ### Suggested UI mapping
 
-| SSE event | UI area |
-|-----------|---------|
-| `thinking_*` | Collapsible “Thinking” panel, append `delta` |
-| `tool_call_start` / `tool_result` | Tool call card (name, args, result) |
-| `text_delta` | Assistant message bubble, append text |
-| `visualization` | Chart/table block + link or embed via `GET url` |
-| `done` | Re-enable input, clear “streaming” indicator |
-| `error` | Error toast or inline message |
+| SSE event                         | UI area                                         |
+| --------------------------------- | ----------------------------------------------- |
+| `thinking_*`                      | Collapsible “Thinking” panel, append `delta`    |
+| `tool_call_start` / `tool_result` | Tool call card (name, args, result)             |
+| `text_delta`                      | Assistant message bubble, append text           |
+| `visualization`                   | Chart/table block + link or embed via `GET url` |
+| `done`                            | Re-enable input, clear “streaming” indicator    |
+| `error`                           | Error toast or inline message                   |
 
 ---
 

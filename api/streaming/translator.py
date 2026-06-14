@@ -9,6 +9,8 @@ from pydantic_ai.messages import (
     FunctionToolCallEvent,
     FunctionToolResultEvent,
     PartDeltaEvent,
+    PartStartEvent,
+    TextPart,
     TextPartDelta,
     ToolCallPartDelta,
 )
@@ -23,6 +25,13 @@ SSEEvent = tuple[str, dict[str, Any]]
 class StreamTranslator:
     """Maps one PydanticAI event to zero or more SSE events."""
 
+    # Friendly status sentences shown in the UI while a tool runs.
+    # Keys must match the agent's tool function names (agent/tools/*).
+    _TOOL_STATUS = {
+        "query_data": "Querying the dataset…",
+        "visualize": "Creating the visualization…",
+    }
+
     def __init__(self, session_id: str, artifact_store: ArtifactStore) -> None:
         self._session_id = session_id
         self._artifact_store = artifact_store
@@ -36,6 +45,8 @@ class StreamTranslator:
         tool_name: str | None = None,
         tool_args: dict[str, Any] | None = None,
     ) -> list[SSEEvent]:
+        if isinstance(event, PartStartEvent):
+            return self._translate_part_start(event)
         if isinstance(event, PartDeltaEvent):
             return self._translate_part_delta(event)
         if isinstance(event, FunctionToolCallEvent):
@@ -44,12 +55,27 @@ class StreamTranslator:
             return self._translate_tool_result(event, tool_name, tool_args)
         return []
 
-    def flush(self) -> list[SSEEvent]:
-        """Flush thinking parser buffer at end of stream."""
+    def _translate_part_start(self, event: PartStartEvent) -> list[SSEEvent]:
+        # Tool-calling turns emit their text (incl. <thinking>) via the event
+        # handler. Anthropic starts text parts empty, but feed any initial
+        # content through the parser so no reasoning is lost on other providers.
+        if isinstance(event.part, TextPart) and event.part.content:
+            return self._thinking_parser.feed(event.part.content)
+        return []
+
+    def feed_text(self, chunk: str) -> list[SSEEvent]:
+        """Convert streamed assistant text into thinking/text SSE events."""
+        return self._thinking_parser.feed(chunk)
+
+    def flush_text(self) -> list[SSEEvent]:
+        """Flush any buffered text from the parser at end of run."""
         return self._thinking_parser.flush()
 
     def _translate_part_delta(self, event: PartDeltaEvent) -> list[SSEEvent]:
-        if isinstance(event.delta, TextPartDelta) and event.delta.content_delta:
+        # Every turn's text — the agent's <thinking> blocks and the final answer —
+        # arrives here via the event handler. Feed it all through the same parser.
+        # There is a single text source (agent.run), so nothing is double-fed.
+        if isinstance(event.delta, TextPartDelta):
             return self._thinking_parser.feed(event.delta.content_delta)
         if isinstance(event.delta, ToolCallPartDelta):
             return [
@@ -65,9 +91,11 @@ class StreamTranslator:
 
     def _translate_tool_call(self, event: FunctionToolCallEvent) -> list[SSEEvent]:
         part = event.part
-        args = part.args if isinstance(part.args, dict) else {}
+        args = part.args_as_dict()
         self._pending_tool_args[part.tool_call_id] = args
+        status = self._TOOL_STATUS.get(part.tool_name, f"Running {part.tool_name}…")
         return [
+            (SSEEventType.STATUS, {"text": status}),
             (
                 SSEEventType.TOOL_CALL_START,
                 {
@@ -75,7 +103,7 @@ class StreamTranslator:
                     "tool_name": part.tool_name,
                     "args": args,
                 },
-            )
+            ),
         ]
 
     def _translate_tool_result(
@@ -108,13 +136,14 @@ class StreamTranslator:
                 session_id=self._session_id,
             )
             if artifact_id:
+                artifact = self._artifact_store.get(artifact_id)
                 events.append(
                     (
                         SSEEventType.VISUALIZATION,
                         {
                             "artifact_id": artifact_id,
                             "title": title,
-                            "type": artifact_type,
+                            "type": artifact.type,
                             "url": f"/artifacts/{artifact_id}",
                         },
                     )

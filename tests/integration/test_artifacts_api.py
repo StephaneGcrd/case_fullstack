@@ -10,6 +10,7 @@ def test_get_artifact_returns_html(client: TestClient, artifact_store, tmp_path)
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("text/html")
     assert b"plot" in response.content
+    assert b"figure-artifact-resize" in response.content
 
 
 def test_get_unknown_artifact_404(client: TestClient):

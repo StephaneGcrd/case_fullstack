@@ -41,8 +41,10 @@ case_fullstack/
 │       └── visualize.py      # Création de visualisations Plotly
 ├── data/                     # Fichiers CSV (tes données de test)
 ├── output/                   # Visualisations générées
+├── api/                      # Backend FastAPI (SSE streaming)
 ├── main.py                   # Script CLI de démonstration
-├── Dockerfile
+├── Dockerfile                # Image CLI agent
+├── Dockerfile.api            # Image API FastAPI
 ├── docker-compose.yml
 ├── requirements.txt
 ├── .env.example
@@ -62,10 +64,34 @@ cp .env.example .env
 
 # 3. Lancer le CLI via Docker
 docker compose run --rm agent
+
+# 4. Lancer l'API via Docker
+docker compose up api
 ```
 
 > Le volume `data/` est monté dans le container — tu peux ajouter/modifier des CSV sans rebuild.
 > Les visualisations générées sont dans `output/`.
+
+### API (Docker)
+
+```bash
+# Démarrer l'API en arrière-plan
+docker compose up api -d
+
+# Vérifier que l'API répond
+curl http://localhost:8000/health
+
+# Arrêter l'API
+docker compose down
+```
+
+L'API est exposée sur **http://localhost:8000** (Swagger : `/docs`). Le frontend (`web/`) peut pointer vers cette URL.
+
+Sans Docker :
+
+```bash
+uvicorn api.main:app --reload --port 8000
+```
 
 ---
 

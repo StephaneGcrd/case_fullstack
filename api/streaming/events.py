@@ -7,6 +7,7 @@ class SSEEventType(StrEnum):
     """Custom SSE event types sent to the React client."""
 
     RUN_START = "run_start"
+    STATUS = "status"
     THINKING_START = "thinking_start"
     THINKING_DELTA = "thinking_delta"
     THINKING_END = "thinking_end"
