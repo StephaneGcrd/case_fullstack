@@ -22,6 +22,18 @@ export type CreateSessionResponse = {
  * POST /sessions
  * Creates a new server-side session with datasets loaded from data/.
  */
+/** GET /health — returns true when the API is reachable. */
+export async function checkHealth(): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_BASE}/health`);
+    if (!res.ok) return false;
+    const data = (await res.json()) as { status?: string };
+    return data.status === "ok";
+  } catch {
+    return false;
+  }
+}
+
 export async function createSession(): Promise<CreateSessionResponse> {
   const res = await fetch(`${API_BASE}/sessions`, { method: "POST" });
 

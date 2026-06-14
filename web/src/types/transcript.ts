@@ -13,7 +13,13 @@ export type RunSegment =
       argsJson?: string;
       result?: string;
     }
-  | { kind: "visualization"; artifactId: string; title: string; url: string };
+  | {
+      kind: "visualization";
+      artifactId: string;
+      title: string;
+      url: string;
+      type: "figure" | "table";
+    };
 
 /** One item in the scrollable transcript. */
 export type TranscriptEntry =

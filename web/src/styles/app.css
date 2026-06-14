@@ -1,1 +1,219 @@
 @import "tailwindcss" source("../");
+
+@utility content-width {
+  margin-inline: auto;
+  width: 100%;
+  max-width: var(--container-3xl);
+}
+
+@utility break-anywhere {
+  @apply break-words;
+  overflow-wrap: anywhere;
+}
+
+@utility wrapped-content {
+  @apply max-w-full overflow-hidden whitespace-pre-wrap break-words;
+  overflow-wrap: anywhere;
+}
+
+@utility segment-block {
+  @apply max-w-[85%] overflow-hidden rounded-lg border border-slate-200 bg-white p-3 shadow-sm;
+}
+
+@utility chat-input-block {
+  @apply box-border overflow-hidden rounded-lg border border-slate-200 bg-white p-3 shadow-sm;
+}
+
+@utility assistant-text-bubble {
+  @apply max-w-[85%] rounded-2xl rounded-bl-sm bg-slate-100 px-4 py-2.5 text-slate-900 shadow-sm;
+}
+
+@utility user-bubble {
+  @apply max-w-[85%] overflow-hidden rounded-2xl rounded-br-sm bg-slate-700 px-4 py-2.5 whitespace-pre-wrap break-words text-white shadow-sm;
+  overflow-wrap: anywhere;
+}
+
+@utility error-block {
+  @apply max-w-[85%] overflow-hidden rounded-lg border border-red-200 bg-red-50 p-3 whitespace-pre-wrap break-words text-red-800;
+  overflow-wrap: anywhere;
+}
+
+.data-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.8125rem;
+}
+
+.data-table th,
+.data-table td {
+  border: 1px solid #d1d5db;
+  padding: 0.375rem 0.5rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.data-table th {
+  background: #f3f4f6;
+  font-weight: 600;
+}
+
+.artifact-table {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  background: #fff;
+}
+
+.artifact-table-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.625rem 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.artifact-table-search {
+  display: flex;
+  min-width: 12rem;
+  flex: 1;
+  align-items: center;
+  gap: 0.375rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.375rem;
+  background: #fff;
+  padding: 0.375rem 0.5rem;
+}
+
+.artifact-table-search-input {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  font-size: 0.8125rem;
+  color: #0f172a;
+  outline: none;
+}
+
+.artifact-table-search-input::placeholder {
+  color: #94a3b8;
+}
+
+.artifact-table-meta {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.artifact-table-scroll {
+  max-height: 24rem;
+  overflow: auto;
+}
+
+.artifact-table-grid {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.artifact-table-grid th,
+.artifact-table-grid td {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+.artifact-table-grid th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f1f5f9;
+  font-weight: 600;
+  color: #334155;
+}
+
+.artifact-table-grid tbody tr:nth-child(even) {
+  background: #f8fafc;
+}
+
+.artifact-table-grid tbody tr:hover {
+  background: #eef2ff;
+}
+
+.artifact-table-sort {
+  display: inline-flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.375rem;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.artifact-table-sort-placeholder {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+}
+
+.artifact-table-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  border-top: 1px solid #e2e8f0;
+  padding: 0.5rem 0.75rem;
+  background: #f8fafc;
+}
+
+.artifact-table-page-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.125rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.375rem;
+  background: #fff;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #475569;
+  cursor: pointer;
+}
+
+.artifact-table-page-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.artifact-table-page-button:not(:disabled):hover {
+  background: #f1f5f9;
+}
+
+.artifact-table-page-label {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.session-response {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  max-width: 100%;
+}
+
+.session-response-label {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #64748b;
+}

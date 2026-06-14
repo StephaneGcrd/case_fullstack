@@ -111,6 +111,7 @@ export function applySseEvent(
           artifactId: event.data.artifact_id as string,
           title: event.data.title as string,
           url: event.data.url as string,
+          type: (event.data.type as "figure" | "table") ?? "figure",
         },
       ];
       break;

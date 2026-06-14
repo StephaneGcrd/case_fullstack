@@ -1,74 +1,14 @@
 import { useLayoutEffect, useRef } from "react";
-import { API_BASE } from "../lib/api";
-import { RunSegment, TranscriptEntry } from "../types/transcript";
+import { TranscriptEntry } from "../types/transcript";
+import { RunSegmentView } from "./segment-views/RunSegmentView";
+import { SessionResponseTable } from "./SessionResponseTable";
 
 type ChatTranscriptProps = {
   entries: TranscriptEntry[];
 };
 
 function ErrorBlock({ message }: { message: string }) {
-  return <div>Error: {message}</div>;
-}
-
-function RunSegmentView({
-  segment,
-  index,
-  segments,
-  isStreaming,
-}: {
-  segment: RunSegment;
-  index: number;
-  segments: RunSegment[];
-  isStreaming: boolean;
-}) {
-  switch (segment.kind) {
-    case "status": {
-      let lastStatusIndex = -1;
-      for (let i = segments.length - 1; i >= 0; i--) {
-        if (segments[i].kind === "status") {
-          lastStatusIndex = i;
-          break;
-        }
-      }
-      const isLastStatus = isStreaming && lastStatusIndex === index;
-      return (
-        <div
-          className={`my-1 text-sm text-gray-500 ${isLastStatus ? "font-medium" : ""}`}
-        >
-          • {segment.text}
-        </div>
-      );
-    }
-    case "thinking":
-      return (
-        <details open>
-          <summary>thinking</summary>
-          <pre>{segment.text}</pre>
-        </details>
-      );
-    case "tool":
-      return (
-        <div>
-          <div>tool: {segment.name}</div>
-          <pre>{JSON.stringify(segment.args, null, 2)}</pre>
-          {segment.result && <pre>{segment.result}</pre>}
-        </div>
-      );
-    case "visualization":
-      return (
-        <div>
-          <a
-            href={`${API_BASE}${segment.url}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {segment.title}
-          </a>
-        </div>
-      );
-    case "text":
-      return <pre>{segment.text}</pre>;
-  }
+  return <div className="error-block">Error: {message}</div>;
 }
 
 function ChatRun({
@@ -77,8 +17,7 @@ function ChatRun({
   entry: Extract<TranscriptEntry, { transcriptType: "chat_run" }>;
 }) {
   return (
-    <div>
-      {entry.runId && <div>run_id: {entry.runId}</div>}
+    <div className="flex w-full max-w-full flex-col items-start gap-3 overflow-hidden">
       {entry.segments.map((segment, index) => (
         <RunSegmentView
           key={
@@ -94,7 +33,6 @@ function ChatRun({
           isStreaming={entry.status === "streaming"}
         />
       ))}
-      <div>status: {entry.status}</div>
     </div>
   );
 }
@@ -102,21 +40,21 @@ function ChatRun({
 function TranscriptEntryView({ entry }: { entry: TranscriptEntry }) {
   switch (entry.transcriptType) {
     case "session_request":
-      return <div>{">>>"} POST /sessions</div>;
-    case "session_response":
-      return <pre>{JSON.stringify(entry.data, null, 2)}</pre>;
-    case "chat_request":
-      return <div>{">>>"} POST /sessions/…/chat</div>;
-    case "chat_run":
       return (
-        <div>
-          <ChatRun entry={entry} />
+        <div className="text-xs text-slate-400 break-words">
+          {">"} Session started.
         </div>
       );
+    case "session_response":
+      return <SessionResponseTable data={entry.data} />;
+    case "chat_request":
+      return <div className="user-bubble">{entry.message}</div>;
+    case "chat_run":
+      return <ChatRun entry={entry} />;
     case "error":
       return <ErrorBlock message={entry.message} />;
   }
-  return <div>{JSON.stringify(entry, null, 2)}</div>;
+  return <pre className="wrapped-content">{JSON.stringify(entry, null, 2)}</pre>;
 }
 
 export function ChatTranscript({ entries }: ChatTranscriptProps) {
@@ -127,12 +65,38 @@ export function ChatTranscript({ entries }: ChatTranscriptProps) {
   }, [entries]);
 
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto">
-      {entries.map((entry) => (
-        <TranscriptEntryView key={entry.id} entry={entry} />
-      ))}
-      <div className="pb-40" />
-      <div ref={bottomRef} aria-hidden />
+    <div className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-4">
+      <div className="content-width">
+        {entries.map((entry) => {
+          const isUser = entry.transcriptType === "chat_request";
+          const isAssistant =
+            entry.transcriptType === "chat_run" ||
+            entry.transcriptType === "error";
+          const isSystem =
+            entry.transcriptType === "session_request" ||
+            entry.transcriptType === "session_response";
+
+          return (
+            <div
+              key={entry.id}
+              className={`max-w-full ${
+                isUser
+                  ? "mb-4 flex justify-end"
+                  : isAssistant
+                    ? "mb-4 flex justify-start"
+                    : isSystem
+                      ? "mb-2"
+                      : "mb-4"
+              }`}
+            >
+              <TranscriptEntryView entry={entry} />
+            </div>
+          );
+        })}
+        {/* Padding to see the chat above the composer (and element for autoscroll) */}
+        <div className="pb-40" />
+        <div ref={bottomRef} aria-hidden />
+      </div>
     </div>
   );
 }
