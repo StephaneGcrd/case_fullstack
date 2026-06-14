@@ -1,11 +1,16 @@
+/**
+ * Inline preview of a saved artifact (figure or CSV table) produced by the visualize tool.
+ * Artifact type may be refined via HEAD request when the SSE hint is ambiguous.
+ */
 import { RiExternalLinkLine } from "@remixicon/react";
 import { API_BASE } from "../../lib/api";
 import { useArtifactType } from "../../lib/useArtifactType";
-import { RunSegment } from "../../types/transcript";
-import { CsvArtifactTable } from "../CsvArtifactTable";
+import type { VisualizationSegment } from "../../types/transcript";
+import { CsvArtifactTable } from "../artifacts/CsvArtifactTable";
+import { FigureArtifactFrame } from "../artifacts/FigureArtifactFrame";
 
 type VisualizationSegmentViewProps = {
-  segment: Extract<RunSegment, { kind: "visualization" }>;
+  segment: VisualizationSegment;
 };
 
 export function VisualizationSegmentView({
@@ -29,12 +34,7 @@ export function VisualizationSegmentView({
         </a>
       </div>
       {artifactType === "figure" ? (
-        <iframe
-          className="h-96 w-full rounded border border-slate-200 bg-white"
-          src={artifactUrl}
-          title={segment.title}
-          loading="lazy"
-        />
+        <FigureArtifactFrame url={artifactUrl} title={segment.title} />
       ) : (
         <CsvArtifactTable url={artifactUrl} />
       )}

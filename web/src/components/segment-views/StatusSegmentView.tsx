@@ -1,7 +1,12 @@
-import { RunSegment } from "../../types/transcript";
+/**
+ * Renders ephemeral status lines emitted during a chat run (e.g. "Querying data…").
+ * Only the latest status is highlighted while streaming; statuses immediately
+ * before a tool segment are hidden because the tool block reuses that text as its label.
+ */
+import type { RunSegment, StatusSegment } from "../../types/transcript";
 
 type StatusSegmentViewProps = {
-  segment: Extract<RunSegment, { kind: "status" }>;
+  segment: StatusSegment;
   index: number;
   segments: RunSegment[];
   isStreaming: boolean;
@@ -22,6 +27,7 @@ export function StatusSegmentView({
   }
   const isLastStatus = isStreaming && lastStatusIndex === index;
   const nextSegment = segments[index + 1];
+  // ToolSegmentView shows the preceding status as its collapsible label.
   if (nextSegment?.kind === "tool") {
     return null;
   }

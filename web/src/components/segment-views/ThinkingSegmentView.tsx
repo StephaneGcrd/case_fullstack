@@ -1,8 +1,9 @@
-import { RunSegment } from "../../types/transcript";
+/** Collapsible view for the model's reasoning trace, active until the run finishes. */
+import type { RunSegment, ThinkingSegment } from "../../types/transcript";
 import { CollapsibleSegmentBlock } from "./CollapsibleSegmentBlock";
 
 type ThinkingSegmentViewProps = {
-  segment: Extract<RunSegment, { kind: "thinking" }>;
+  segment: ThinkingSegment;
   index: number;
   segments: RunSegment[];
   isStreaming: boolean;
