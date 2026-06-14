@@ -8,3 +8,15 @@ services:
     volumes:
       - ./data:/app/data
       - ./output:/app/output
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./output:/app/output
