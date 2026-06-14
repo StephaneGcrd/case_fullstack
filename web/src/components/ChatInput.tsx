@@ -18,6 +18,12 @@ export function ChatInput({
         cols={60}
         value={message}
         onChange={(e) => onMessageChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            if (!disabled) void onSend();
+          }
+        }}
         placeholder="Type your message…"
       />
 
