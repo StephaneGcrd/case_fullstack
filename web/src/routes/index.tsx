@@ -71,6 +71,7 @@ function ApiClientPage() {
         transcriptType: "chat_run",
         thinking: "",
         text: "",
+        statuses: [],
         toolCalls: [],
         visualizations: [],
         status: "streaming",

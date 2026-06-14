@@ -17,6 +17,7 @@ export type TranscriptEntry =
       runId?: string;
       thinking: string;
       text: string;
+      statuses: string[];
       status: "streaming" | "done" | "error";
     }
   | { id: string; transcriptType: "error"; message: string };

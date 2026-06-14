@@ -17,6 +17,22 @@ function ChatRun({
 }) {
   return (
     <div>
+      {entry.statuses.length > 0 && (
+        <div className="my-1 text-sm text-gray-500">
+          {entry.statuses.map((s, i) => (
+            <div
+              key={i}
+              className={
+                i === entry.statuses.length - 1 && entry.status === "streaming"
+                  ? "font-medium"
+                  : ""
+              }
+            >
+              • {s}
+            </div>
+          ))}
+        </div>
+      )}
       {entry.runId && <div>run_id: {entry.runId}</div>}
       {entry.thinking.length > 0 && (
         <details open>

@@ -30,6 +30,9 @@ export function applySseEvent(
     case "text_delta":
       run.text += (event.data.delta as string) ?? "";
       break;
+    case "status":
+      run.statuses = [...run.statuses, (event.data.text as string) ?? ""];
+      break;
     case "done":
       run.status = "done";
       break;
