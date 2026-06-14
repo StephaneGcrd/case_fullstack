@@ -1,5 +1,10 @@
 """FastAPI application entry point."""
 
+from dotenv import load_dotenv
+
+# Load .env before any route creates the PydanticAI agent (API keys, MODEL, etc.).
+load_dotenv()
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
