@@ -25,6 +25,12 @@ SSEEvent = tuple[str, dict[str, Any]]
 class StreamTranslator:
     """Maps one PydanticAI event to zero or more SSE events."""
 
+    # Friendly status sentences shown in the UI while a tool runs.
+    _TOOL_STATUS = {
+        "query_data": "Querying the dataset…",
+        "visualize": "Creating the visualization…",
+    }
+
     def __init__(self, session_id: str, artifact_store: ArtifactStore) -> None:
         self._session_id = session_id
         self._artifact_store = artifact_store
@@ -87,7 +93,9 @@ class StreamTranslator:
         part = event.part
         args = part.args if isinstance(part.args, dict) else {}
         self._pending_tool_args[part.tool_call_id] = args
+        status = self._TOOL_STATUS.get(part.tool_name, f"Running {part.tool_name}…")
         return [
+            (SSEEventType.STATUS, {"text": status}),
             (
                 SSEEventType.TOOL_CALL_START,
                 {
@@ -95,7 +103,7 @@ class StreamTranslator:
                     "tool_name": part.tool_name,
                     "args": args,
                 },
-            )
+            ),
         ]
 
     def _translate_tool_result(

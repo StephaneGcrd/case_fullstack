@@ -77,16 +77,31 @@ def test_thinking_tag_emits_thinking_events():
     assert SSEEventType.THINKING_END in types
 
 
-def test_tool_call_event():
+def test_tool_call_event_emits_status_then_tool_call_start():
     translator = StreamTranslator(session_id="s1", artifact_store=InMemoryArtifactStore())
     part = ToolCallPart(tool_name="query_data", args={"sql": "SELECT 1"}, tool_call_id="tc1")
     events = translator.translate(FunctionToolCallEvent(part=part))
     assert events == [
+        (SSEEventType.STATUS, {"text": "Querying the dataset…"}),
         (
             SSEEventType.TOOL_CALL_START,
             {"tool_call_id": "tc1", "tool_name": "query_data", "args": {"sql": "SELECT 1"}},
-        )
+        ),
     ]
+
+
+def test_visualize_tool_call_status():
+    translator = StreamTranslator(session_id="s1", artifact_store=InMemoryArtifactStore())
+    part = ToolCallPart(tool_name="visualize", args={"title": "Chart"}, tool_call_id="tc1")
+    events = translator.translate(FunctionToolCallEvent(part=part))
+    assert events[0] == (SSEEventType.STATUS, {"text": "Creating the visualization…"})
+
+
+def test_unknown_tool_call_status_fallback():
+    translator = StreamTranslator(session_id="s1", artifact_store=InMemoryArtifactStore())
+    part = ToolCallPart(tool_name="frobnicate", args={}, tool_call_id="tc1")
+    events = translator.translate(FunctionToolCallEvent(part=part))
+    assert events[0] == (SSEEventType.STATUS, {"text": "Running frobnicate…"})
 
 
 def test_tool_call_delta_event():
