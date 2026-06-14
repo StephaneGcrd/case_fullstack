@@ -44,13 +44,19 @@ class StreamTranslator:
             return self._translate_tool_result(event, tool_name, tool_args)
         return []
 
-    def flush(self) -> list[SSEEvent]:
-        """Flush thinking parser buffer at end of stream."""
+    def feed_text(self, chunk: str) -> list[SSEEvent]:
+        """Convert streamed assistant text into thinking/text SSE events."""
+        return self._thinking_parser.feed(chunk)
+
+    def flush_text(self) -> list[SSEEvent]:
+        """Flush thinking parser buffer after stream_text completes."""
         return self._thinking_parser.flush()
 
     def _translate_part_delta(self, event: PartDeltaEvent) -> list[SSEEvent]:
-        if isinstance(event.delta, TextPartDelta) and event.delta.content_delta:
-            return self._thinking_parser.feed(event.delta.content_delta)
+        # Text deltas are read from run.stream_text(); event_stream only carries
+        # tool-call deltas on follow-up turns when the model replies without tools.
+        if isinstance(event.delta, TextPartDelta):
+            return []
         if isinstance(event.delta, ToolCallPartDelta):
             return [
                 (

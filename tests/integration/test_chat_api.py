@@ -1,5 +1,4 @@
 import pytest
-from pydantic_ai.messages import PartDeltaEvent, TextPartDelta
 
 from api.dependencies import get_agent_factory
 from tests.helpers.fake_agent import make_fake_run_stream
@@ -11,13 +10,8 @@ def test_chat_stream_returns_sse_events(client, monkeypatch):
     session_id = created["session_id"]
 
     fake_agent = make_fake_run_stream(
-        [
-            PartDeltaEvent(
-                index=0,
-                delta=TextPartDelta(content_delta="<thinking>plan</thinking>"),
-            ),
-            PartDeltaEvent(index=0, delta=TextPartDelta(content_delta="Answer.")),
-        ]
+        [],
+        stream_text_chunks=["<thinking>plan</thinking>", "Answer."],
     )
 
     app = client.app

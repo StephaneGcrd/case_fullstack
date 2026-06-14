@@ -1,7 +1,5 @@
 import pytest
 
-from pydantic_ai.messages import PartDeltaEvent, TextPartDelta
-
 from api.services.artifact_store import InMemoryArtifactStore
 from api.services.chat_service import ChatService
 from api.services.session_store import InMemorySessionStore
@@ -18,9 +16,7 @@ async def test_stream_chat_yields_run_start_and_text_delta():
     session = await session_store.create(datasets, "info")
     await session_store.acquire_stream(session.id)
 
-    agent = make_fake_run_stream(
-        [PartDeltaEvent(index=0, delta=TextPartDelta(content_delta="Hello"))]
-    )
+    agent = make_fake_run_stream([], stream_text_chunks=["Hello"])
     service = ChatService(session_store=session_store, artifact_store=artifact_store)
 
     raw = ""

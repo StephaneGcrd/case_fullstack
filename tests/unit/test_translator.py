@@ -15,20 +15,21 @@ from api.streaming.translator import StreamTranslator
 
 def test_text_delta_emits_text_sse_event():
     translator = StreamTranslator(session_id="s1", artifact_store=InMemoryArtifactStore())
+    events = translator.feed_text("Hello")
+    assert events == [(SSEEventType.TEXT_DELTA, {"delta": "Hello"})]
+
+
+def test_text_part_delta_from_event_stream_is_ignored():
+    translator = StreamTranslator(session_id="s1", artifact_store=InMemoryArtifactStore())
     events = translator.translate(
         PartDeltaEvent(index=0, delta=TextPartDelta(content_delta="Hello"))
     )
-    assert events == [(SSEEventType.TEXT_DELTA, {"delta": "Hello"})]
+    assert events == []
 
 
 def test_thinking_tag_emits_thinking_events():
     translator = StreamTranslator(session_id="s1", artifact_store=InMemoryArtifactStore())
-    events = translator.translate(
-        PartDeltaEvent(
-            index=0,
-            delta=TextPartDelta(content_delta="<thinking>plan</thinking>"),
-        )
-    )
+    events = translator.feed_text("<thinking>plan</thinking>")
     types = [e[0] for e in events]
     assert SSEEventType.THINKING_START in types
     assert SSEEventType.THINKING_DELTA in types

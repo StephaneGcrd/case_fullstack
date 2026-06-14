@@ -1,0 +1,15 @@
+.git
+.gitignore
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+.env
+
+# Frontend (not needed for API/agent images)
+web/node_modules
+web/dist
+web/build
+
+# Generated artifacts (mounted as volumes at runtime)
+output

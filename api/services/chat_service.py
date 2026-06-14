@@ -47,8 +47,6 @@ class ChatService:
             async for event in event_stream:
                 for sse_event in translator.translate(event):
                     await queue.put(sse_event)
-            for sse_event in translator.flush():
-                await queue.put(sse_event)
 
         yield encode_event(SSEEventType.RUN_START, {"run_id": run_id})
 
@@ -60,8 +58,11 @@ class ChatService:
                     message_history=session.message_history or None,
                     event_stream_handler=event_stream_handler,
                 ) as run:
-                    async for _ in run.stream_text(delta=True):
-                        pass
+                    async for chunk in run.stream_text(delta=True):
+                        for sse_event in translator.feed_text(chunk):
+                            await queue.put(sse_event)
+                    for sse_event in translator.flush_text():
+                        await queue.put(sse_event)
                     session.message_history = run.all_messages()
             except Exception as exc:
                 await queue.put((SSEEventType.ERROR, {"message": str(exc)}))
@@ -76,6 +77,10 @@ class ChatService:
                 if item is not None:
                     yield encode_event(*item)
             await task
+            while not queue.empty():
+                item = queue.get_nowait()
+                if item is not None:
+                    yield encode_event(*item)
         finally:
             await self._session_store.release_stream(session_id)
             yield encode_event(SSEEventType.DONE, {"session_id": session_id})

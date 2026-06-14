@@ -14,7 +14,11 @@ async def _async_iter(items: list[Any]) -> AsyncIterator[Any]:
         yield item
 
 
-def make_fake_run_stream(events: list[Any], final_output: str = "Done."):
+def make_fake_run_stream(
+    events: list[Any],
+    final_output: str = "Done.",
+    stream_text_chunks: list[str] | None = None,
+):
     """Return a mock agent whose run_stream yields predefined events."""
 
     @asynccontextmanager
@@ -32,8 +36,9 @@ def make_fake_run_stream(events: list[Any], final_output: str = "Done."):
 
             await handler(ctx, event_gen())
 
+        text_chunks = stream_text_chunks if stream_text_chunks is not None else [final_output]
         run = MagicMock()
-        run.stream_text = lambda delta=False: _async_iter([final_output])
+        run.stream_text = lambda delta=False: _async_iter(text_chunks)
         run.all_messages = MagicMock(return_value=[])
 
         emit_task = asyncio.create_task(_emit())
