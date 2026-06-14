@@ -65,7 +65,7 @@ class StreamTranslator:
         return self._thinking_parser.flush()
 
     def _translate_part_delta(self, event: PartDeltaEvent) -> list[SSEEvent]:
-        # Text from tool-calling turns (the agent's <thinking> blocks) arrives
+        # Intermediate-turn text deltas (which may include <thinking> blocks) arrive
         # here; the final answer's text comes via run.stream_text(). Feed both
         # through the same parser. The handler breaks at FinalResultEvent before
         # the final answer's deltas, so there is no duplication.

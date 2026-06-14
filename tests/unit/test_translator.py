@@ -2,6 +2,8 @@ from pydantic_ai.messages import (
     FunctionToolCallEvent,
     FunctionToolResultEvent,
     PartDeltaEvent,
+    PartStartEvent,
+    TextPart,
     TextPartDelta,
     ToolCallPart,
     ToolCallPartDelta,
@@ -44,19 +46,26 @@ def test_thinking_in_event_stream_text_emits_thinking_events():
 
 def test_part_start_text_is_surfaced():
     """Some providers carry initial text on PartStartEvent; it must not be dropped."""
-    from pydantic_ai.messages import PartStartEvent, TextPart
-
     translator = StreamTranslator(session_id="s1", artifact_store=InMemoryArtifactStore())
     events = translator.translate(PartStartEvent(index=0, part=TextPart(content="hi")))
     assert events == [(SSEEventType.TEXT_DELTA, {"delta": "hi"})]
 
 
 def test_empty_part_start_text_emits_nothing():
-    from pydantic_ai.messages import PartStartEvent, TextPart
-
     translator = StreamTranslator(session_id="s1", artifact_store=InMemoryArtifactStore())
     events = translator.translate(PartStartEvent(index=0, part=TextPart(content="")))
     assert events == []
+
+
+def test_part_start_thinking_emits_thinking_events():
+    translator = StreamTranslator(session_id="s1", artifact_store=InMemoryArtifactStore())
+    events = translator.translate(
+        PartStartEvent(index=0, part=TextPart(content="<thinking>plan</thinking>"))
+    )
+    types = [e[0] for e in events]
+    assert SSEEventType.THINKING_START in types
+    assert (SSEEventType.THINKING_DELTA, {"delta": "plan"}) in events
+    assert SSEEventType.THINKING_END in types
 
 
 def test_thinking_tag_emits_thinking_events():
