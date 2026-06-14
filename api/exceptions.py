@@ -15,3 +15,7 @@ class ArtifactNotFoundError(Exception):
 
 class ArtifactGoneError(Exception):
     """Raised when artifact metadata exists but file is missing. Maps to HTTP 410."""
+
+
+class ArtifactAccessDeniedError(Exception):
+    """Raised when an artifact filepath is outside the trusted output directory. Maps to HTTP 403."""

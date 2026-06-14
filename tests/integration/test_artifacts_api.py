@@ -1,9 +1,8 @@
 from fastapi.testclient import TestClient
 
 
-def test_get_artifact_returns_html(client: TestClient, artifact_store, tmp_path, monkeypatch):
-    monkeypatch.chdir(tmp_path)
-    filepath = tmp_path / "chart.html"
+def test_get_artifact_returns_html(client: TestClient, artifact_store, tmp_path):
+    filepath = tmp_path / "output" / "chart.html"
     filepath.write_text("<html>plot</html>")
     artifact_id = artifact_store.register(filepath, "Chart", "figure", "s1")
 

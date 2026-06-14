@@ -74,15 +74,18 @@ class ThinkingParser:
 
     def flush(self) -> list[tuple[str, dict]]:
         """Emit any remaining buffered text at end of stream."""
-        if not self._carry:
-            return []
-        delta_type = (
-            SSEEventType.THINKING_DELTA
-            if self._state is _State.IN_THINKING
-            else SSEEventType.TEXT_DELTA
-        )
-        events = [(delta_type, {"delta": self._carry})]
-        self._carry = ""
+        events: list[tuple[str, dict]] = []
+        if self._carry:
+            delta_type = (
+                SSEEventType.THINKING_DELTA
+                if self._state is _State.IN_THINKING
+                else SSEEventType.TEXT_DELTA
+            )
+            events.append((delta_type, {"delta": self._carry}))
+            self._carry = ""
+        if self._state is _State.IN_THINKING:
+            events.append((SSEEventType.THINKING_END, {}))
+            self._state = _State.OUTSIDE
         return events
 
     @staticmethod

@@ -1,3 +1,5 @@
+import asyncio
+
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 from api.dependencies import get_session_store
@@ -11,7 +13,7 @@ router = APIRouter(prefix="/sessions", tags=["sessions"])
 @router.post("", response_model=CreateSessionResponse)
 async def create_session(store: SessionStore = Depends(get_session_store)):
     """Create a new chat session with datasets loaded from data/."""
-    datasets, dataset_info = load_datasets()
+    datasets, dataset_info = await asyncio.to_thread(load_datasets)
     session = await store.create(datasets, dataset_info)
     return CreateSessionResponse(
         session_id=session.id,

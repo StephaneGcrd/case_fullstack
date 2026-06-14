@@ -10,6 +10,7 @@ Usage:
 
 import asyncio
 import json
+import re
 import sys
 
 from dotenv import load_dotenv

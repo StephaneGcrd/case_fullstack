@@ -20,8 +20,10 @@ def session_store() -> InMemorySessionStore:
 
 
 @pytest.fixture
-def artifact_store() -> InMemoryArtifactStore:
-    return InMemoryArtifactStore()
+def artifact_store(tmp_path) -> InMemoryArtifactStore:
+    output_dir = tmp_path / "output"
+    output_dir.mkdir()
+    return InMemoryArtifactStore(output_dir=output_dir)
 
 
 @pytest.fixture

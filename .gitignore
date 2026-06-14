@@ -14,3 +14,9 @@ __pycache__/
 .venv/
 
 output/
+
+node_modules/
+web/node_modules/
+web/dist/
+web/build/
+web/.env

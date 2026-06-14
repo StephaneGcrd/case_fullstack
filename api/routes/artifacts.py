@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Response
 
 from api.dependencies import get_artifact_store
-from api.exceptions import ArtifactGoneError, ArtifactNotFoundError
+from api.exceptions import ArtifactAccessDeniedError, ArtifactGoneError, ArtifactNotFoundError
 from api.services.artifact_store import ArtifactStore
 
 router = APIRouter(prefix="/artifacts", tags=["artifacts"])
@@ -22,6 +22,8 @@ async def get_artifact(
         raise HTTPException(status_code=404, detail="Artifact not found") from None
     except ArtifactGoneError:
         raise HTTPException(status_code=410, detail="Artifact file no longer available") from None
+    except ArtifactAccessDeniedError:
+        raise HTTPException(status_code=403, detail="Artifact access denied") from None
 
     return Response(
         content=content,

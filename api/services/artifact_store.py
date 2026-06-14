@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Literal, Protocol
 
-from api.exceptions import ArtifactGoneError, ArtifactNotFoundError
+from api.exceptions import ArtifactAccessDeniedError, ArtifactGoneError, ArtifactNotFoundError
 
 ArtifactType = Literal["figure", "table"]
 
@@ -49,8 +49,17 @@ class ArtifactStore(Protocol):
 class InMemoryArtifactStore:
     """In-memory artifact registry pointing to files on disk."""
 
-    def __init__(self) -> None:
+    def __init__(self, output_dir: str | Path = "output") -> None:
+        self._output_dir = Path(output_dir).resolve()
         self._artifacts: dict[str, Artifact] = {}
+
+    def _validate_filepath(self, filepath: Path) -> Path:
+        resolved = filepath.resolve()
+        try:
+            resolved.relative_to(self._output_dir)
+        except ValueError:
+            raise ArtifactAccessDeniedError(str(resolved)) from None
+        return resolved
 
     def register(
         self,
@@ -59,6 +68,7 @@ class InMemoryArtifactStore:
         artifact_type: ArtifactType,
         session_id: str,
     ) -> str:
+        filepath = self._validate_filepath(filepath)
         artifact_id = str(uuid.uuid4())
         self._artifacts[artifact_id] = Artifact(
             id=artifact_id,
@@ -93,6 +103,7 @@ class InMemoryArtifactStore:
 
     def read_content(self, artifact_id: str) -> bytes:
         artifact = self.get(artifact_id)
-        if not artifact.filepath.exists():
+        filepath = self._validate_filepath(artifact.filepath)
+        if not filepath.exists():
             raise ArtifactGoneError(artifact_id)
-        return artifact.filepath.read_bytes()
+        return filepath.read_bytes()

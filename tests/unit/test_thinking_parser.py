@@ -60,3 +60,13 @@ def test_flush_emits_remaining_buffer():
     assert events == [(SSEEventType.TEXT_DELTA, {"delta": "hello"})]
     events = parser.flush()
     assert events == [(SSEEventType.TEXT_DELTA, {"delta": "<thin"})]
+
+
+def test_flush_emits_thinking_end_when_stream_ends_in_thinking():
+    parser = ThinkingParser()
+    events = parser.feed("<thinking>unfinished reasoning")
+    assert events == [
+        (SSEEventType.THINKING_START, {}),
+        (SSEEventType.THINKING_DELTA, {"delta": "unfinished reasoning"}),
+    ]
+    assert parser.flush() == [(SSEEventType.THINKING_END, {})]
