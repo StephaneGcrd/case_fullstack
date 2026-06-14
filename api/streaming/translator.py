@@ -136,13 +136,14 @@ class StreamTranslator:
                 session_id=self._session_id,
             )
             if artifact_id:
+                artifact = self._artifact_store.get(artifact_id)
                 events.append(
                     (
                         SSEEventType.VISUALIZATION,
                         {
                             "artifact_id": artifact_id,
                             "title": title,
-                            "type": artifact_type,
+                            "type": artifact.type,
                             "url": f"/artifacts/{artifact_id}",
                         },
                     )

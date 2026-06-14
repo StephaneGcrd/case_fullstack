@@ -193,3 +193,18 @@ def test_visualize_tool_result_emits_visualization(tmp_path, monkeypatch):
     assert viz[1]["title"] == "Chart"
     assert viz[1]["type"] == "figure"
     assert viz[1]["url"].startswith("/artifacts/")
+
+
+def test_visualize_table_csv_emits_table_type_even_without_args(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    output_dir = tmp_path / "output"
+    output_dir.mkdir()
+    filepath = output_dir / "top_products.csv"
+    filepath.write_text("product,sales\nA,1\n")
+    store = InMemoryArtifactStore()
+    translator = StreamTranslator(session_id="s1", artifact_store=store)
+    content = "Table created: Top Products\nSaved to: output/top_products.csv\n"
+    part = ToolReturnPart(tool_name="visualize", content=content, tool_call_id="tc3")
+    events = translator.translate(FunctionToolResultEvent(part=part), tool_name="visualize")
+    viz = next(e for e in events if e[0] == SSEEventType.VISUALIZATION)
+    assert viz[1]["type"] == "table"

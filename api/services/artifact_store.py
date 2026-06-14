@@ -17,6 +17,16 @@ ArtifactType = Literal["figure", "table"]
 _SAVED_TO_PATTERN = re.compile(r"Saved to:\s*(.+)", re.MULTILINE)
 
 
+def resolve_artifact_type(filepath: Path, declared: ArtifactType) -> ArtifactType:
+    """Prefer the file extension over tool args when they disagree."""
+    suffix = filepath.suffix.lower()
+    if suffix == ".csv":
+        return "table"
+    if suffix in {".html", ".htm"}:
+        return "figure"
+    return declared
+
+
 @dataclass
 class Artifact:
     id: str
@@ -69,12 +79,13 @@ class InMemoryArtifactStore:
         session_id: str,
     ) -> str:
         filepath = self._validate_filepath(filepath)
+        resolved_type = resolve_artifact_type(filepath, artifact_type)
         artifact_id = str(uuid.uuid4())
         self._artifacts[artifact_id] = Artifact(
             id=artifact_id,
             filepath=filepath,
             title=title,
-            type=artifact_type,
+            type=resolved_type,
             session_id=session_id,
             created_at=datetime.now(timezone.utc),
         )
