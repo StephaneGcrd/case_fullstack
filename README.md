@@ -1,6 +1,6 @@
 # Case Technique Stéphane Guichard — Développeur Full Stack
 
-Bonjour, voici mon take sur votre cas pratique.
+Hello, voici mon take sur votre cas pratique.
 
 ## Run
 
@@ -54,7 +54,7 @@ uvicorn api.main:app --reload --port 8000
 - [ ] Peristance des sessions (front-end et backend)
   - [ ] v1 dans la session du navigateur
   - [ ] v2 avec database
-- [ ] Persistance du contexte, Memory mieux développer : pour eventuellement apprendre des patterns de l'user dans son utilisation du chat ?
+- [ ] Persistance du contexte, Memory mieux développée : pour eventuellement apprendre des patterns de l'user dans son utilisation du chat ?
 - [ ] Error handling peu étudié
 - [ ] Protection prompt engineering & autre vulnérabilités liées aux LLM
 - [ ] Framework de tests plus poussés, e2e, et front-end pour appli robuste
