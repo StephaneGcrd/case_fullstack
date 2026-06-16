@@ -33,6 +33,7 @@ class StreamTranslator:
     }
 
     def __init__(self, session_id: str, artifact_store: ArtifactStore) -> None:
+        """Bind a chat session and artifact store for the duration of one agent run."""
         self._session_id = session_id
         self._artifact_store = artifact_store
         self._thinking_parser = ThinkingParser()
@@ -45,6 +46,7 @@ class StreamTranslator:
         tool_name: str | None = None,
         tool_args: dict[str, Any] | None = None,
     ) -> list[SSEEvent]:
+        """Route one PydanticAI stream event to the appropriate handler."""
         if isinstance(event, PartStartEvent):
             return self._translate_part_start(event)
         if isinstance(event, PartDeltaEvent):
@@ -56,6 +58,7 @@ class StreamTranslator:
         return []
 
     def _translate_part_start(self, event: PartStartEvent) -> list[SSEEvent]:
+        """Handle the start of a message part; feed any initial text into the thinking parser."""
         # Tool-calling turns emit their text (incl. <thinking>) via the event
         # handler. Anthropic starts text parts empty, but feed any initial
         # content through the parser so no reasoning is lost on other providers.
@@ -72,6 +75,7 @@ class StreamTranslator:
         return self._thinking_parser.flush()
 
     def _translate_part_delta(self, event: PartDeltaEvent) -> list[SSEEvent]:
+        """Handle incremental updates: streamed text chunks or tool-call argument deltas."""
         # Every turn's text — the agent's <thinking> blocks and the final answer —
         # arrives here via the event handler. Feed it all through the same parser.
         # There is a single text source (agent.run), so nothing is double-fed.
@@ -90,6 +94,7 @@ class StreamTranslator:
         return []
 
     def _translate_tool_call(self, event: FunctionToolCallEvent) -> list[SSEEvent]:
+        """Emit a UI status line and a tool_call_start event when the agent invokes a tool."""
         part = event.part
         args = part.args_as_dict()
         self._pending_tool_args[part.tool_call_id] = args
@@ -112,6 +117,7 @@ class StreamTranslator:
         tool_name: str | None,
         tool_args: dict[str, Any] | None,
     ) -> list[SSEEvent]:
+        """Emit tool_result; for visualize, also register the file and emit a visualization event."""
         part = event.part
         name = tool_name or part.tool_name
         content = str(part.content)

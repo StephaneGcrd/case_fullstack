@@ -18,7 +18,7 @@ _SAVED_TO_PATTERN = re.compile(r"Saved to:\s*(.+)", re.MULTILINE)
 
 
 def resolve_artifact_type(filepath: Path, declared: ArtifactType) -> ArtifactType:
-    """Prefer the file extension over tool args when they disagree."""
+    """Infer figure vs table from the file extension, falling back to the tool's declared type."""
     suffix = filepath.suffix.lower()
     if suffix == ".csv":
         return "table"
@@ -29,6 +29,8 @@ def resolve_artifact_type(filepath: Path, declared: ArtifactType) -> ArtifactTyp
 
 @dataclass
 class Artifact:
+    """Metadata for one generated file (graph or table) tied to a chat session."""
+
     id: str
     filepath: Path
     title: str
@@ -38,6 +40,8 @@ class Artifact:
 
 
 class ArtifactStore(Protocol):
+    """Interface for registering and reading artifacts — swap implementations in tests."""
+
     def register(
         self,
         filepath: Path,
@@ -60,10 +64,12 @@ class InMemoryArtifactStore:
     """In-memory artifact registry pointing to files on disk."""
 
     def __init__(self, output_dir: str | Path = "output") -> None:
+        """Initialize the registry; only files under output_dir may be served."""
         self._output_dir = Path(output_dir).resolve()
         self._artifacts: dict[str, Artifact] = {}
 
     def _validate_filepath(self, filepath: Path) -> Path:
+        """Resolve filepath and reject paths outside the trusted output directory."""
         resolved = filepath.resolve()
         try:
             resolved.relative_to(self._output_dir)
@@ -78,6 +84,7 @@ class InMemoryArtifactStore:
         artifact_type: ArtifactType,
         session_id: str,
     ) -> str:
+        """Record an on-disk artifact and return its public artifact_id."""
         filepath = self._validate_filepath(filepath)
         resolved_type = resolve_artifact_type(filepath, artifact_type)
         artifact_id = str(uuid.uuid4())
@@ -98,6 +105,7 @@ class InMemoryArtifactStore:
         artifact_type: ArtifactType,
         session_id: str,
     ) -> str | None:
+        """Parse the visualize tool's "Saved to: …" line and register the file, if present."""
         match = _SAVED_TO_PATTERN.search(content)
         if not match:
             return None
@@ -107,12 +115,14 @@ class InMemoryArtifactStore:
         return self.register(filepath, title, artifact_type, session_id)
 
     def get(self, artifact_id: str) -> Artifact:
+        """Look up artifact metadata by id; raises ArtifactNotFoundError if unknown."""
         artifact = self._artifacts.get(artifact_id)
         if artifact is None:
             raise ArtifactNotFoundError(artifact_id)
         return artifact
 
     def read_content(self, artifact_id: str) -> bytes:
+        """Read raw file bytes for an artifact; raises ArtifactGoneError if the file was deleted."""
         artifact = self.get(artifact_id)
         filepath = self._validate_filepath(artifact.filepath)
         if not filepath.exists():
